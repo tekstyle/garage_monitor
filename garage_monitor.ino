@@ -5,8 +5,8 @@ int relay = 0;          // ATMega 328P pin 2
 int motion_sensor = 1;  // ATMega 328P pin 3
 int door_sensor = 7;    // ATMega 328P pin 13
 int red_led = 8;        // ATMega 328P pin 14
-int blue_led = 9;       // ATMega 328P pin 15
-int green_led = 10;     // ATMega 328P pin 16
+int green_led = 9;       // ATMega 328P pin 15
+int blue_led = 10;     // ATMega 328P pin 16
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2); // ATMega 328P pins {18, 17, 11, 6, 5, 4}
 
 int counter = 0;  // each increment of counter will represent 1 second.
@@ -25,31 +25,48 @@ void setup()
   digitalWrite (blue_led, HIGH);
 
   lcd.begin (16, 2);
-  lcd.print ("Garage Monior")
+  lcd.print ("Garage Monior");
   lcd.setCursor (0, 1);
-  lcd.print ("Version 1.0);
+  lcd.print ("Version 1.0");
   delay (2000);
 }
 
 void loop ()
 {
-  // Motion detected and door is open, set RGB to yellow and reset counter.
-  if (motion () && !door_closed ())
+  lcd.clear ();
+  lcd.setCursor (0, 0);
+  lcd.print (counter);
+  // while motion detected and door is open, set RGB to yellow and reset counter.
+  while (motion () && !door_closed ())
   {
-    setColor (127, 127, 255);
+    lcd.clear ();
+    lcd.print ("Motion!         ");
+    pulse (red_led, 10);
+    delay (1000);
+    lcd.clear ();
     counter = 0;
   }
   
   // If door is closed, set RGB to green, reset message_sent and wait till door opens.
-  if (door_closed ())
+  while (door_closed ())
   {
+    lcd.clear ();
+    lcd.setCursor (0, 1);
+    lcd.print ("Door Closed     ");
+    lcd.setCursor (0, 0);
     setColor (255, 127, 255);
-    message_sent = false; 
+    message_sent = false;
+    counter = 0;
+    delay (500);
   }
   // door open, set RGB to red.
-  else 
+  if (!door_closed ())
+ {
+    lcd.setCursor (0, 1);
+    lcd.print ("Door Open!  ");
+    lcd.setCursor (0, 0);
     setColor (127, 255, 255);
-  
+ }
   // If door is open, counter has reached 30 (~30 seconds) and message has not been sent, then close door.  
   if (!door_closed () && counter == 30 && !message_sent)
   {
@@ -57,6 +74,16 @@ void loop ()
     close_door (); 
   }
   
+  while (message_sent && !door_closed)
+  {
+    lcd.clear ();
+    lcd.print ("**Closing Door**");
+    delay (500);
+    lcd.clear ();
+    lcd.setCursor (0, 1);
+    lcd.print ("**Closing Door**");
+    delay (500);
+  }
   delay(1000);
   
   if (counter != 30) // Wait ~30 seconds before reseting back to zero.
